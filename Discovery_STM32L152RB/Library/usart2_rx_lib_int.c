@@ -1,0 +1,48 @@
+#include<stm32l1xx.h>
+#include<stdlib.h>
+#define THRESHOLD 100
+char data;
+
+void USART2_IRQHandler(void)
+{
+	data=USART2->DR;
+	if(data=='b')
+	GPIOB->ODR=GPIO_ODR_ODR_6;
+	if(data=='g')
+	GPIOB->ODR=GPIO_ODR_ODR_7;
+
+}
+int main()
+{
+	//set UART
+	RCC->APB1ENR|= RCC_APB1ENR_USART2EN;
+	RCC->AHBENR|=RCC_AHBENR_GPIOAEN;
+	USART2->CR1|=USART_CR1_UE;  //Enable usart
+	USART2->CR1 &=~USART_CR1_M;  // Disable M bit
+	USART2->CR2 &=~(USART_CR2_STOP); //Set stop bit = 1
+	USART2->BRR = 208;// set baud rate=9600
+	GPIOA->MODER |=GPIO_MODER_MODER2_1|GPIO_MODER_MODER3_1;//configure pins as alternate functions
+	GPIOA->OSPEEDR|=(GPIO_OSPEEDER_OSPEEDR2_0|GPIO_OSPEEDER_OSPEEDR3_0);
+	GPIOA->PUPDR |=GPIO_PUPDR_PUPDR3_0;
+	GPIOA->AFR[0] |=0x7700;// Select the alternate function as USART
+	USART2->CR1|=USART_CR1_RE;
+	USART2->CR1|=USART_CR1_RXNEIE;
+	
+		//GPIO Initialisation
+	RCC->AHBENR |=RCC_AHBENR_GPIOBEN;
+	GPIOB->MODER &=~GPIO_MODER_MODER6;
+	GPIOB->MODER |=GPIO_MODER_MODER6_0;
+	GPIOB->MODER &=~GPIO_MODER_MODER7; 
+	GPIOB->MODER |=GPIO_MODER_MODER7_0;
+	GPIOB->OTYPER &= ~(GPIO_OTYPER_IDR_6|GPIO_OTYPER_IDR_7);
+	GPIOB->OSPEEDR &= ~(GPIO_OSPEEDER_OSPEEDR6|GPIO_OSPEEDER_OSPEEDR6);
+	GPIOB->PUPDR &= ~(GPIO_PUPDR_PUPDR6|GPIO_PUPDR_PUPDR7);
+	
+	NVIC_EnableIRQ(USART2_IRQn);
+	while(1);
+
+	return 0;
+}
+void SystemInit()
+{
+}
